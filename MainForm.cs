@@ -19,6 +19,7 @@ namespace Lab11TP
             spectatorPanels = new List<Panel>();
             spectators = new List<Spectator>();
             movieShowingHandlers = new EventHandler<CinemaEvent>[2];
+            panel1.BorderStyle = BorderStyle.FixedSingle;
 
             for (int i = 0; i < 2; i++)
             {
@@ -31,9 +32,7 @@ namespace Lab11TP
 
                 movieShowingHandlers[i] = (sender, e) => spectator.HandleMovieShowing(sender, e);
             }
-            btnShowMovie1.Click += (sender, e) => ShowMovie(txtFilm1, dateTimePicker1, 0);
-            btnShowMovie2.Click += (sender, e) => ShowMovie(txtFilm2, dateTimePicker2, 1);
-
+            btnShowMovie1.Click += (sender, e) => ShowMovie(txtFilm1, dateTimePicker1);
             btnConnect1.Click += (sender, e) => ConnectToCinema(0);
             btnConnect2.Click += (sender, e) => ConnectToCinema(1);
             btnDisconnect1.Click += (sender, e) => DisconnectFromCinema(0);
@@ -42,7 +41,7 @@ namespace Lab11TP
             btnShowInfo2.Click += (sender, e) => ShowInfo(1);
         }
 
-        private void ShowMovie(TextBox filmTextBox, DateTimePicker dateTimePicker, int i)
+        private void ShowMovie(TextBox filmTextBox, DateTimePicker dateTimePicker)
         {
             try
             {
