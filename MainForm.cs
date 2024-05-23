@@ -9,107 +9,40 @@ namespace Lab11TP
     {
         private Cinema cinema;
         private List<Panel> spectatorPanels;
-        private Spectator spectator;
+        private List<Spectator> spectators;
+        private EventHandler<CinemaEvent>[] movieShowingHandlers;
 
         public MainForm()
         {
             InitializeComponent();
             cinema = new Cinema();
             spectatorPanels = new List<Panel>();
-            spectator = new Spectator();
+            spectators = new List<Spectator>();
+            movieShowingHandlers = new EventHandler<CinemaEvent>[2];
 
             for (int i = 0; i < 2; i++)
             {
-                Panel panel = CreateSpectatorPanel(i);
+                Spectator spectator = new Spectator();
+                spectators.Add(spectator);
+
+                Panel panel = Controls.Find($"panelSpectator{i + 1}", true).FirstOrDefault() as Panel;
+                panel.BorderStyle = BorderStyle.FixedSingle;
                 spectatorPanels.Add(panel);
+
+                movieShowingHandlers[i] = (sender, e) => spectator.HandleMovieShowing(sender, e);
             }
-            cinema.MovieShowing += spectator.HandleMovieShowing;
+            btnShowMovie1.Click += (sender, e) => ShowMovie(txtFilm1, dateTimePicker1, 0);
+            btnShowMovie2.Click += (sender, e) => ShowMovie(txtFilm2, dateTimePicker2, 1);
+
+            btnConnect1.Click += (sender, e) => ConnectToCinema(0);
+            btnConnect2.Click += (sender, e) => ConnectToCinema(1);
+            btnDisconnect1.Click += (sender, e) => DisconnectFromCinema(0);
+            btnDisconnect2.Click += (sender, e) => DisconnectFromCinema(1);
+            btnShowInfo1.Click += (sender, e) => ShowInfo(0);
+            btnShowInfo2.Click += (sender, e) => ShowInfo(1);
         }
 
-        private Panel CreateSpectatorPanel(int index)
-        {
-            Panel panel = new Panel
-            {
-                BorderStyle = BorderStyle.FixedSingle,
-                Size = new System.Drawing.Size(460, 200),
-                Location = new System.Drawing.Point(50, 50 + index * 220)
-            };
-            Label label_film = new Label
-            {
-                Text = "Введите название фильма:",
-                Location = new System.Drawing.Point(10, 10)
-            };
-
-            TextBox textBox = new TextBox
-            {
-                Location = new System.Drawing.Point(10, 25),
-                Size = new System.Drawing.Size(120, 20)
-            };
-            Label label_date = new Label
-            {
-                Text = "Выберите дату:",
-                Location = new System.Drawing.Point(10, 50)
-            };
-
-            DateTimePicker dateTimePicker = new DateTimePicker
-            {
-                Location = new System.Drawing.Point(10, 65),
-                Size = new System.Drawing.Size(120, 20)
-            };
-
-            Button button = new Button
-            {
-                Text = "Показать фильм",
-                Location = new System.Drawing.Point(10, 170),
-                Size = new System.Drawing.Size(110, 23)
-            };
-            button.Click += (sender, e) => ShowMovie(textBox, dateTimePicker);
-
-            Button connectButton = new Button
-            {
-                Text = "Подключиться",
-                Location = new System.Drawing.Point(120, 170),
-                Size = new System.Drawing.Size(110, 23)
-            };
-            connectButton.Click += (sender, e) => ConnectToCinema();
-
-            Button disconnectButton = new Button
-            {
-                Text = "Отключиться",
-                Location = new System.Drawing.Point(230, 170),
-                Size = new System.Drawing.Size(110, 23)
-            };
-            disconnectButton.Click += (sender, e) => DisconnectFromCinema();
-
-            Button showInfoButton = new Button
-            {
-                Text = "Показать инфо",
-                Location = new System.Drawing.Point(340, 170),
-                Size = new System.Drawing.Size(110, 23)
-            };
-            showInfoButton.Click += (sender, e) => ShowInfo(panel);
-
-            ListBox listBox = new ListBox
-            {
-                Location = new System.Drawing.Point(140, 10),
-                Size = new System.Drawing.Size(310, 150)
-            };
-
-            panel.Controls.Add(textBox);
-            panel.Controls.Add(dateTimePicker);
-            panel.Controls.Add(button);
-            panel.Controls.Add(connectButton);
-            panel.Controls.Add(disconnectButton);
-            panel.Controls.Add(showInfoButton);
-            panel.Controls.Add(listBox);
-            panel.Controls.Add(label_film);
-            panel.Controls.Add(label_date);
-            this.Controls.Add(panel);
-
-            return panel;
-        }
-
-        private void ShowMovie(TextBox filmTextBox, DateTimePicker dateTimePicker)
+        private void ShowMovie(TextBox filmTextBox, DateTimePicker dateTimePicker, int i)
         {
             try
             {
@@ -124,7 +57,6 @@ namespace Lab11TP
                 ShowErrorMessage(ex.Message);
             }
         }
-
 
         private void ValidateInput(string film, DateTime selectedDate)
         {
@@ -144,27 +76,31 @@ namespace Lab11TP
             MessageBox.Show("Произошла ошибка: " + message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        private void ConnectToCinema()
+        private void ConnectToCinema(int i)
         {
-            cinema.MovieShowing += spectator.HandleMovieShowing;
-            MessageBox.Show("Вы подключились к прослушиванию.", "Статус соединения", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            cinema.MovieShowing += movieShowingHandlers[i];
+            MessageBox.Show($"Спектатор {i + 1} подключился к прослушиванию.", "Статус соединения", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void DisconnectFromCinema()
+        private void DisconnectFromCinema(int i)
         {
-            cinema.MovieShowing -= spectator.HandleMovieShowing;
-            MessageBox.Show("Вы отключились от прослушивания.", "Статус соединения", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            cinema.MovieShowing -= movieShowingHandlers[i];
+            MessageBox.Show($"Спектатор {i + 1} отключился от прослушивания.", "Статус соединения", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void ShowInfo(Panel panel)
+        private void ShowInfo(int i)
         {
-            ListBox listBox = panel.Controls.OfType<ListBox>().FirstOrDefault();
-            if (listBox != null)
+            if (i >= 0 && i < spectatorPanels.Count)
             {
-                listBox.Items.Clear();
-                foreach (string movieInfo in spectator.GetMovieList())
+                Panel panel = spectatorPanels[i];
+                ListBox listBox = panel.Controls.OfType<ListBox>().FirstOrDefault();
+                if (listBox != null)
                 {
-                    listBox.Items.Add(movieInfo);
+                    listBox.Items.Clear();
+                    foreach (string movieInfo in spectators[i].GetMovieList())
+                    {
+                        listBox.Items.Add(movieInfo);
+                    }
                 }
             }
         }
@@ -188,12 +124,7 @@ namespace Lab11TP
 
         public void ShowMovie(string film, DateTime date)
         {
-            OnMovieShowing(new CinemaEvent(film, date));
-        }
-
-        protected virtual void OnMovieShowing(CinemaEvent e)
-        {
-            MovieShowing?.Invoke(this, e);
+            MovieShowing?.Invoke(this, new CinemaEvent(film, date));
         }
     }
 
